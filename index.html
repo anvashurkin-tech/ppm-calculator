@@ -26,11 +26,11 @@ main{max-width:540px;margin:0 auto;padding:56px 20px 40px}h1{font-size:27px;lett
 <div class="input-wrap"><input id="ppm" type="text" inputmode="decimal" autocomplete="off" value="850 000" aria-label="Средний ППМ в рублях"><span class="rub">₽</span></div>
 <div class="section"><div class="range-top"><label class="field-label" for="decline" style="margin:0">Ежемесячное падение</label><span class="percent" id="percent">3%</span></div><input id="decline" type="range" min="0" max="10" step="0.5" value="3"><div class="ends"><span>0%</span><span>10%</span></div></div>
 <div class="rule"></div>
-<div class="metrics"><div><div class="metric-label">Коэффициент</div><div class="metric-value" id="factor">70,03</div></div><div><div class="metric-label">Новых когорт</div><div class="metric-value">12</div></div></div>
-<div class="result" aria-live="polite"><div class="metric-label">Прогноз годового оборота</div><div class="metric-value" id="turnover">59 525 585 ₽</div></div>
-<div class="note">Каждый месяц появляется одна новая когорта. Январская работает 12 месяцев, декабрьская — 1. Оборот существующей базы не включён.</div>
+<div class="metrics"><div><div class="metric-label">Коэффициент</div><div class="metric-value" id="factor">63,88</div></div><div><div class="metric-label">Новых когорт</div><div class="metric-value">12</div></div></div>
+<div class="result" aria-live="polite"><div class="metric-label">Прогноз годового оборота</div><div class="metric-value" id="turnover">54 302 119 ₽</div></div>
+<div class="note">Первый месяц когорты — 35% ППМ (для января — 21%). Второй месяц — 100% ППМ. С третьего месяца действует выбранное ежемесячное падение. Учитывается оборот до декабря включительно; существующая база не включена.</div>
 </section>
-<div class="info"><strong>Формула:</strong> ППМ × коэффициент. При снижении на 3% коэффициент ≈ 70. Все настройки сохраняются на этом устройстве.</div>
+<div class="info"><strong>Формула:</strong> ППМ × коэффициент. При снижении на 3% коэффициент ≈ 63,88. Все настройки сохраняются на этом устройстве.</div>
 <div class="footer">Калькулятор ППМ · офлайн после первого открытия по ссылке</div>
 </main>
 <script>
@@ -40,7 +40,14 @@ const nf=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0});
 const clean=s=>Number(String(s).replace(/[^\d,.]/g,'').replace(',','.'))||0;
 const formatInput=v=>nf.format(Math.round(v));
 try{const data=JSON.parse(localStorage.getItem('ppm-calc-v1')||'null');if(data){if(Number.isFinite(data.ppm))ppm.value=formatInput(data.ppm);if(Number.isFinite(data.decline))decline.value=Math.min(10,Math.max(0,data.decline));}}catch(e){}
-function calc(){const p=clean(ppm.value),d=Number(decline.value);let k=0;for(let m=0;m<12;m++)k+=(12-m)*Math.pow(1-d/100,m);percent.textContent=d.toLocaleString('ru-RU')+'%';factor.textContent=k.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});turnover.textContent=nf.format(Math.round(p*k))+' ₽';try{localStorage.setItem('ppm-calc-v1',JSON.stringify({ppm:p,decline:d}));}catch(e){}}
+function calc(){const p=clean(ppm.value),d=Number(decline.value);let k=0;
+for(let cohort=0;cohort<12;cohort++){
+  const monthsInYear=12-cohort;
+  k += cohort===0 ? 0.21 : 0.35; // первый месяц
+  if(monthsInYear>=2) k += 1;    // второй месяц = ППМ
+  for(let month=3;month<=monthsInYear;month++)
+    k += Math.pow(1-d/100,month-2); // снижение с третьего месяца
+}percent.textContent=d.toLocaleString('ru-RU')+'%';factor.textContent=k.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});turnover.textContent=nf.format(Math.round(p*k))+' ₽';try{localStorage.setItem('ppm-calc-v1',JSON.stringify({ppm:p,decline:d}));}catch(e){}}
 ppm.addEventListener('input',calc);ppm.addEventListener('blur',()=>{ppm.value=formatInput(clean(ppm.value));calc();});decline.addEventListener('input',calc);calc();
 })();
 </script>
